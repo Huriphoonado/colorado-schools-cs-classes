@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+		<title>Schools</title>
+	</head>
+	<body>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+		<script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+		<script src="https://cdn.firebase.com/js/client/2.4.0/firebase.js"></script>
+
+		<div id="map" style="height:750px"></div>
+	</body>
+</html>
+
+<script>
+
+var Ref = new Firebase("https://cs-schools-map-co.firebaseio.com/");
+
+var myMap = L.map($('#map')[0]).setView([39.0000, -105.5000], 8)
+L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+	maxZoom: 18,
+	id: 'doubleshow.noeko77m',
+	accessToken: 'pk.eyJ1IjoiZG91Ymxlc2hvdyIsImEiOiJjaWZ5Y3B1eTE1MHRidWRtMG9uZXluajg4In0.u5ONW27Ly5cU7M5KYi6Y9Q'
+}).addTo(myMap)
+
+var middles = L.layerGroup();
+var highs = L.layerGroup();
+var midHighs = L.layerGroup();
+
+var freeReduce = L.layerGroup();
+var races = L.layerGroup();
+
+var overlayMaps = {
+    "Middle Schools": middles,
+    "High Schools": highs,
+    "Middle/High Schools": midHighs
+};
+
+var baseMaps = {
+    "Free/Reduced": freeReduce,
+    "Race": races
+};
+
+var controller = L.control.layers(baseMaps, overlayMaps).addTo(myMap);
+var schoolData
+
+Ref.once('value', function(snapshot){
+	schoolData = snapshot.val()
+	drawFR("Free/Reduced")
+});
+
+function drawSchools(schoolData) {
+	schoolData.forEach(function(school, key){
+		var schoolName = school.school
+		var latLon = [school.lat, school.lon]
+		var fr = school.fr
+		var type = school.type
+		var district = school.district
+
+		if (type == 'Middle'){
+			L.marker(latLon).addTo(middles)
+    		.bindPopup(schoolName + '<br>' + fr + '% free and reduced')
+		}
+		else if (type == 'High'){
+			L.marker(latLon).addTo(highs)
+    		.bindPopup(schoolName + '<br>' + fr + '% free and reduced')
+		}
+		else{
+			L.marker(latLon).addTo(midHighs)
+    		.bindPopup(schoolName + '<br>' + district)
+		}
+	});
+}
+
+function circleSize(courses){
+	if (courses == "Unknown" | courses == "Unknown ") {
+		console.log('here')
+		return 100
+	}
+	else if (courses == 0) {
+		return 100
+	}
+	else if (courses == 1) {
+		return 250
+	}
+	else if (courses == 2) {
+		return 500
+	}
+	else if (courses == 3) {
+		return 750
+	}
+	else if (courses == 4) {
+		return 1000
+	}
+	else if (courses >= 5) {
+		return 1250
+	}
+	else {
+		console.log("Course: " + courses)
+		return 100
+	}
+}
+
+function FRColor(fr) {
+	if (fr == "Unknown" | fr == "Unknown ") {
+		return "#424242"
+	}
+	else if (fr <= 20) {
+		return "#8bc34a"
+	}
+	else if (fr <= 40) {
+		return "#cddc39"
+	}
+	else if (fr <= 60) {
+		return "#ffeb3b"
+	}
+	else if (fr <= 80) {
+		return "#ff9800"
+	}
+	else if (fr <= 100) {
+		return "#ff5722"
+	}
+	else {
+		console.log("FR: " + fr)
+		return "#424242"
+	}
+}
+
+// Returns Color based on highest racial demographic
+// White, Black, Latino
+function raceColor(raceArray){
+	colorArray = ["#ffe082", "#4e342e", "#fb8c00"]
+	// http://stackoverflow.com/questions/11301438/return-index-of-greatest-value-in-an-array
+	var indexOfMaxValue = raceArray.reduce(function(iMax,x,i,a) {return x>a[iMax] ? i : iMax;}, 0);
+	return colorArray[indexOfMaxValue]
+}
+
+function drawFR(layerType) {
+	middles.clearLayers();
+	highs.clearLayers();
+	midHighs.clearLayers();
+	
+	schoolData.forEach(function(school, key){
+		var schoolName = school.school
+		var latLon = [school.lat, school.lon]
+		var fr = school.fr
+		var type = school.type
+		var district = school.district
+		var courses = school.courses
+		var white = school.white
+		var black = school.black
+		var latino = school.latino
+		var raceArray = [white, black, latino]
+
+		if (layerType == "Free/Reduced"){
+			var color = FRColor(fr)
+		}
+		else{
+			var color = raceColor(raceArray)
+		}
+		
+		var radius = circleSize(courses)
+
+		if (type == 'Middle'){
+			var circle = L.circle(latLon, radius, {
+				color: color,
+				fillColor: color,
+				fillOpacity: 0.5
+			}).addTo(middles)
+			.bindPopup(district)
+		}
+		else if (type == 'High'){
+			var circle = L.circle(latLon, radius, {
+				color: color,
+				fillColor: color,
+				fillOpacity: 0.5
+			}).addTo(highs)
+			.bindPopup(district)
+		}
+		else{
+			var circle = L.circle(latLon, radius, {
+				color: color,
+				fillColor: color,
+				fillOpacity: 0.5
+			}).addTo(midHighs)
+			.bindPopup(district)
+		}
+	});
+}
+
+function drawRace() {
+	console.log('Race')
+}
+
+myMap.on('baselayerchange', function(e) {
+    drawFR(e.name)
+});
+
+</script>

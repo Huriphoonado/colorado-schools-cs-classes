@@ -9,16 +9,41 @@
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
 		<script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
 		<script src="https://cdn.firebase.com/js/client/2.4.0/firebase.js"></script>
-
-		<div id="map" style="height:750px"></div>
+		<div align="center"><h1>Visualization of Colorado Computer Science Offerings</h1></div>
+		<div id="map" style="height:700px"></div>
+		<div align="center">
+			<img src="images/Course_Count_Histogram.png" alt="Plot" style="width:600px">
+			<img src="images/School_Lvl_FR_by_White.png" alt="Plot" style="width:600px">
+		</div>
+		<div align="center">
+			<img src="images/School_Lvl_Courses_by_White.png" alt="Plot" style="width:400px">
+			<img src="images/District_Lvl_Courses_by White.png" alt="Plot" style="width:400px">
+			<img src="images/Zipcode_Lvl_Courses_by_White.png" alt="Plot" style="width:400px">
+		</div>
+		<div align="center">
+			<img src="images/School_Lvl_Courses_by_FR.png" alt="Plot" style="width:400px">
+			<img src="images/District_Lvl_Courses_by_FR.png" alt="Plot" style="width:400px">
+			<img src="images/Zipcode_Lvl_Courses_by_FR.png" alt="Plot" style="width:400px">
+		</div>
+		<div align="center">
+			<img src="images/School_Lvl_Courses_by_White_and_Type.png" alt="Plot" style="width:600px">
+			<img src="images/School_Lvl_Courses_by_FR_and_Type.png	" alt="Plot" style="width:600px">
+		</div>
 	</body>
 </html>
 
 <script>
 
+// Draws a map with Denver and Boulder Schools
+// Visualizes CS Courses offered against Free/Reduced Lunch and Racial Breakdown
+// Data Collected by CS Learning Class
+// Plots created by James Foster (James.M.Foster@colorado.edu)
+
+// ------------------- Setup -------------------
+
 var Ref = new Firebase("https://cs-schools-map-co.firebaseio.com/");
 
-var myMap = L.map($('#map')[0]).setView([39.0000, -105.5000], 8)
+var myMap = L.map($('#map')[0]).setView([39.7392, -104.9903], 10)
 L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
 	maxZoom: 18,
 	id: 'doubleshow.noeko77m',
@@ -51,32 +76,10 @@ Ref.once('value', function(snapshot){
 	drawFR("Free/Reduced")
 });
 
-function drawSchools(schoolData) {
-	schoolData.forEach(function(school, key){
-		var schoolName = school.school
-		var latLon = [school.lat, school.lon]
-		var fr = school.fr
-		var type = school.type
-		var district = school.district
-
-		if (type == 'Middle'){
-			L.marker(latLon).addTo(middles)
-    		.bindPopup(schoolName + '<br>' + fr + '% free and reduced')
-		}
-		else if (type == 'High'){
-			L.marker(latLon).addTo(highs)
-    		.bindPopup(schoolName + '<br>' + fr + '% free and reduced')
-		}
-		else{
-			L.marker(latLon).addTo(midHighs)
-    		.bindPopup(schoolName + '<br>' + district)
-		}
-	});
-}
+// ------------------- Visualization Functions -------------------
 
 function circleSize(courses){
 	if (courses == "Unknown" | courses == "Unknown ") {
-		console.log('here')
 		return 100
 	}
 	else if (courses == 0) {
@@ -154,6 +157,9 @@ function drawFR(layerType) {
 		var latino = school.latino
 		var raceArray = [white, black, latino]
 
+		// Ugly, but works for now...
+		var textString = "<h4>" + schoolName + "</h4>" + "District: " + district + "<br>" + "Number of CS Courses: " + courses + "<br>" + "Free/Reduced: " + fr + "%" + "<br>" + "White: " + white + "%" + "<br>" + "African American: " + black + "%" + "<br>" + "Hispanic: " + latino + "%" + "<br>"
+
 		if (layerType == "Free/Reduced"){
 			var color = FRColor(fr)
 		}
@@ -169,7 +175,7 @@ function drawFR(layerType) {
 				fillColor: color,
 				fillOpacity: 0.5
 			}).addTo(middles)
-			.bindPopup(district)
+			.bindPopup(textString)
 		}
 		else if (type == 'High'){
 			var circle = L.circle(latLon, radius, {
@@ -177,7 +183,7 @@ function drawFR(layerType) {
 				fillColor: color,
 				fillOpacity: 0.5
 			}).addTo(highs)
-			.bindPopup(district)
+			.bindPopup(textString)
 		}
 		else{
 			var circle = L.circle(latLon, radius, {
@@ -185,14 +191,14 @@ function drawFR(layerType) {
 				fillColor: color,
 				fillOpacity: 0.5
 			}).addTo(midHighs)
-			.bindPopup(district)
+			.bindPopup(textString)
 		}
 	});
 }
 
-function drawRace() {
-	console.log('Race')
-}
+// ------------------- Interaction Functions -------------------
+
+// TODO - Add hover and support for better information viewing
 
 myMap.on('baselayerchange', function(e) {
     drawFR(e.name)

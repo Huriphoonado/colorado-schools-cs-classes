@@ -1,0 +1,3 @@
+# Visualization of Colorado Computer Science Offerings
+
+A simple web app showing middle and high schools in the Denver and Boulder areas. A group of students at CU Boulder spent a few hours calling schools and gathered data about computer science courses offered as well as information about racial demographics and percentages of students on free or reduced lunch. The data we collected may be pulled from a public firebase (cs-schools-map-co.firebaseIO.com).
